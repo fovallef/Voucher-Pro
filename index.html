@@ -107,7 +107,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;ba
 </style>
 </head>
 <body>
-<div id="root"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;background:#020617;color:#fff;gap:8px"><div style="font-size:56px">💳</div><p style="font-size:20px;font-weight:800"><span style="color:#6366f1">Voucher</span>Pro</p><p style="font-size:13px;color:#64748b" id="loadMsg">Cargando v2.7b…</p></div></div>
+<div id="root"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;background:#020617;color:#fff;gap:8px"><div style="font-size:56px">💳</div><p style="font-size:20px;font-weight:800"><span style="color:#6366f1">Voucher</span>Pro</p><p style="font-size:13px;color:#64748b" id="loadMsg">Cargando v2.8…</p></div></div>
 
 <script>
 'use strict';
@@ -126,7 +126,7 @@ window.addEventListener('unhandledrejection',function(e){
 // ═══════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════
-const APP_VERSION='v2.7c · 11 Apr 2026';
+const APP_VERSION='v2.8 · 11 Apr 2026';
 const DEFAULT_PCARDS=['American Express','BBVA','Santander','Banamex','Morgan Stanley'];
 const DEFAULT_ECARDS=['Clara'];
 const DEFAULT_MSI_CARDS=['American Express','BBVA','Banamex'];
@@ -1011,40 +1011,26 @@ async function doImg(e){
     const isE=S.entity==='empresarial';
     const cts=cats();const cdsList=cds();
 
-    // PASS 1: Free-form extraction — Claude reads the voucher without constraints
-    const pass1=`Mira esta imagen de un voucher/ticket/comprobante de pago con mucha atención.
-
-Extrae EXACTAMENTE lo que ves en el documento. Devuelve SOLO este JSON (sin texto extra):
-
-{
-  "terminal": "marca del terminal si aparece (Getnet, Clip, iZettle, Square, etc.) o null",
-  "merchant_name": "nombre del NEGOCIO/ESTABLECIMIENTO (no del terminal de pago)",
-  "merchant_address": "dirección si aparece o null",
-  "amount_raw": "monto EXACTO como aparece en el voucher incluyendo símbolo y moneda",
-  "amount_number": número limpio sin comas ni símbolo (ej: 25384.55),
-  "currency": "MXN o USD u otra",
-  "date_raw": "fecha EXACTA como aparece",
-  "date_iso": "YYYY-MM-DD",
-  "time_raw": "hora EXACTA como aparece",
-  "time_hhmm": "HH:MM",
-  "card_last4": "últimos 4 dígitos de la tarjeta o null",
-  "card_brand": "Visa/MasterCard/Amex u otro o null",
-  "card_type": "CREDIT/DEBIT o null",
-  "card_label": "${isE?'Si es MasterCard o Visa corporativa pon Clara. Si es Amex pon American Express. Si es otra pon el banco':'Si es Amex pon American Express. Si es BBVA pon BBVA. Si es Banamex pon Banamex. Si es Santander pon Santander. Si es Morgan Stanley pon Morgan Stanley'}",
-  "transaction_type": "COMPRA/VENTA/DEVOLUCION/REEMBOLSO",
-  "authorization_code": "código de autorización o null",
-  "reference": "número de referencia o null",
-  ${isE?'"rfc": "RFC del comercio si aparece o null","cfdi_folio": "folio UUID CFDI si aparece o null",':""}
-  "msi": número de meses si dice MSI o meses sin intereses o null,
-  "status": "APROBADA/RECHAZADA/PENDIENTE",
-  "category_guess": "UNA de: restaurante/supermercado/gasolina/salud/farmacia/entretenimiento/hotel/transporte/ropa/tecnologia/suscripcion/comision/spa/otro"
-}
-
-NOTAS CRÍTICAS:
-- merchant_name = el NEGOCIO (ej: "CARTESIANO BOUTIQUES Y WELLNES"), NO el terminal (Getnet no es el comercio)
-- amount_number = SOLO el monto principal pagado, número limpio
-- Si el voucher dice "APROBADA" o "APPROVED" el pago fue exitoso
-- Si ves "COMERCIO COPIA" o "COPIA COMERCIO" es una copia válida del voucher del negocio`;
+    const isEmp=isE;
+    const cardHint=isEmp?'Si ves MasterCard/Visa corporativa pon Clara':'Amex=American Express,BBVA=BBVA,Banamex=Banamex,Santander=Santander,Morgan=Morgan Stanley';
+    const cfdiFields=isEmp?'"rfc":"RFC o null","cfdi_folio":"UUID o null"':'"rfc":null,"cfdi_folio":null';
+    const pass1='Analiza este voucher de pago. El COMERCIO es el negocio (ej: CARTESIANO), NO el terminal (Getnet/Clip no son comercios).'+
+'Devuelve SOLO este JSON:\n{'+
+'"terminal":"Getnet/Clip/iZettle/Square u otro o null",'+
+'"merchant_name":"nombre del NEGOCIO/ESTABLECIMIENTO",'+
+'"amount_number":numero_sin_comas,'+
+'"currency":"MXN",'+
+'"date_iso":"YYYY-MM-DD",'+
+'"time_hhmm":"HH:MM",'+
+'"card_last4":"4 digitos o null",'+
+'"card_brand":"Visa/MasterCard/Amex u otro",'+
+'"card_label":"'+cardHint+'",'+
+'"transaction_type":"COMPRA o DEVOLUCION o REEMBOLSO",'+
+cfdiFields+','+
+'"msi":null_o_numero,'+
+'"status":"APROBADA o RECHAZADA",'+
+'"category_guess":"restaurante/supermercado/gasolina/salud/entretenimiento/hotel/transporte/ropa/tecnologia/suscripcion/comision/otro"'+
+'}';
 
     const raw1=await callClaude([{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:f.type||'image/jpeg',data}},
@@ -1187,6 +1173,24 @@ Responde ÚNICAMENTE con JSON válido, sin texto previo ni posterior:
 // ═══════════════════════════════════════════════════
 // RECONCILE TAB
 // ═══════════════════════════════════════════════════
+
+function stmtCard(s){
+  const unrecBg=(s.unrecognized||0)>0?'rgba(239,68,68,.1)':'rgba(16,185,129,.05)';
+  const unrecColor=(s.unrecognized||0)>0?'#ef4444':'#10b981';
+  const summary=s.summary?'<p style="font-size:11px;color:#64748b;line-height:1.4">'+esc(s.summary)+'</p>':'';
+  return '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:8px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">'+
+    '<div><p style="font-weight:700;font-size:13px">'+esc(s.bank)+'</p>'+
+    '<p style="font-size:11px;color:#94a3b8">Corte: '+s.cutDate+' · Subido: '+(s.uploadedAt||'').slice(0,10)+'</p></div>'+
+    '<p style="font-weight:700;font-size:14px;color:#10b981">'+fS(s.totalBalance||0)+'</p></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">'+
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:5px"><p style="font-size:14px;font-weight:700">'+(s.totalCharges||0)+'</p><p style="font-size:9px;color:#94a3b8">Cargos</p></div>'+
+    '<div style="text-align:center;background:rgba(16,185,129,.1);border-radius:8px;padding:5px"><p style="font-size:14px;font-weight:700;color:#10b981">'+(s.matched||0)+'</p><p style="font-size:9px;color:#94a3b8">Conciliados</p></div>'+
+    '<div style="text-align:center;background:'+unrecBg+';border-radius:8px;padding:5px"><p style="font-size:14px;font-weight:700;color:'+unrecColor+'">'+(s.unrecognized||0)+'</p><p style="font-size:9px;color:#94a3b8">No reconoc.</p></div></div>'+
+    summary+
+    '<button class="btn bs" style="margin-top:8px;margin-bottom:0;padding:7px;font-size:11px" data-delstmt="'+s.id+'">🗑️ Eliminar registro</button></div>';
+}
+
 function rReconcile(){
   const pend=S.txs.filter(t=>t.entity===S.entity&&t.status==='pending').length;
   const rec=S.txs.filter(t=>t.entity===S.entity&&t.status==='reconciled').length;
@@ -1207,32 +1211,7 @@ function rReconcile(){
 </div>
 ${stmts.length?`
 <p class="stit" style="margin-top:4px">📄 Historial de Estados de Cuenta (${stmts.length})</p>
-${stmts.map(s=>`
-<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:8px">
-  <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
-    <div>
-      <p style="font-weight:700;font-size:13px">${esc(s.bank)}</p>
-      <p style="font-size:11px;color:#94a3b8">Corte: ${s.cutDate} · Subido: ${s.uploadedAt?.slice(0,10)||''}</p>
-    </div>
-    <p style="font-weight:700;font-size:14px;color:#10b981">${'$'+parseFloat(s.totalBalance||0).toLocaleString('es-MX',{minimumFractionDigits:0})}</p>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
-    <div style="text-align:center;background:var(--bg3);border-radius:8px;padding:5px">
-      <p style="font-size:14px;font-weight:700">${s.totalCharges||0}</p>
-      <p style="font-size:9px;color:#94a3b8">Cargos</p>
-    </div>
-    <div style="text-align:center;background:rgba(16,185,129,.1);border-radius:8px;padding:5px">
-      <p style="font-size:14px;font-weight:700;color:#10b981">${s.matched||0}</p>
-      <p style="font-size:9px;color:#94a3b8">Conciliados</p>
-    </div>
-    <div style="text-align:center;background:${(s.unrecognized||0)>0?'rgba(239,68,68,.1)':'rgba(16,185,129,.05)'};border-radius:8px;padding:5px">
-      <p style="font-size:14px;font-weight:700;color:${(s.unrecognized||0)>0?'#ef4444':'#10b981'}">${s.unrecognized||0}</p>
-      <p style="font-size:9px;color:#94a3b8">No reconoc.</p>
-    </div>
-  </div>
-  ${s.summary?`<p style="font-size:11px;color:#64748b;line-height:1.4">${esc(s.summary)}</p>`:''}
-  <button class="btn bs" style="margin-top:8px;margin-bottom:0;padding:7px;font-size:11px" data-delstmt="${s.id}">🗑️ Eliminar registro</button>
-</div>`).join('')}`:''}
+${stmts.map(s=>stmtCard(s)).join('')}`:''}
 ${disp.length?`<p class="stit" style="color:#ef4444">🚨 Disputas activas</p>
 ${disp.map(t=>`<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:14px;padding:12px;margin-bottom:8px">
   <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
@@ -1893,6 +1872,29 @@ setTimeout(()=>alert(`✅ ${imported} transacciones importadas desde Gmail.`),10
 }
 
 // ── GMAIL TAB RENDER ────────────────────────────────────────────────────────
+
+function gmailCard(r,i){
+const isRef=r.tipo===‘reembolso’;
+const bg=isRef?‘rgba(16,185,129,.08)’:‘var(–bg2)’;
+const bd=isRef?‘rgba(16,185,129,.3)’:‘var(–bd)’;
+const amtColor=isRef?’#10b981’:‘var(–tx)’;
+const badge=isRef?’<span style="font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;background:rgba(16,185,129,.2);color:#34d399">💚 REEMBOLSO</span>’:’<span style="font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;background:rgba(99,102,241,.2);color:#a5b4fc">💳 CARGO</span>’;
+const sign=isRef?’+’:’-’;
+const items=r.itemsSummary?’<p style="font-size:11px;color:#64748b;margin-top:2px">’+esc(r.itemsSummary)+’</p>’:’’;
+const order=r.orderId?’<p style="font-size:10px;color:#475569;font-family:monospace">Pedido: ‘+esc(r.orderId)+’</p>’:’’;
+return ‘<div style="background:'+bg+';border:1px solid '+bd+';border-radius:14px;padding:12px;margin-bottom:8px">’+
+‘<div style="display:flex;align-items:start;gap:10px">’+
+‘<input type=“checkbox” data-gmidx=”’+i+’” ‘+(r.selected?‘checked’:’’)+’ style=“margin-top:3px;width:16px;height:16px;flex-shrink:0;cursor:pointer”>’+
+‘<div style="flex:1;min-width:0">’+
+‘<div style="display:flex;justify-content:space-between;align-items:start">’+
+‘<div><p style="font-weight:700;font-size:13px">’+esc(r.merchant)+’</p>’+
+‘<p style="font-size:11px;color:#94a3b8">’+esc(r.app)+’ · ‘+r.date+’ ‘+r.time+’</p>’+
+items+order+’</div>’+
+‘<div style="text-align:right;flex-shrink:0;margin-left:8px">’+
+‘<p style="font-weight:700;font-size:14px;color:'+amtColor+'">’+sign+fS(Math.abs(r.amount))+’</p>’+
+badge+’</div></div></div></div></div>’;
+}
+
 function rGmail(){
 const hasClientId=!!S.gmailClientId;
 const results=S.gmailImportResults;
@@ -1922,26 +1924,7 @@ ${importable.length?`
   <p class="stit" style="margin:0">Encontradas (${importable.length})</p>
   <button id="toggleAllBtn" style="background:none;border:none;color:var(--in);font-size:12px;cursor:pointer">${selected.length===importable.length?'Deseleccionar todo':'Seleccionar todo'}</button>
 </div>
-${importable.map((r,i)=>`
-<div style="background:${r.tipo==='reembolso'?'rgba(16,185,129,.08)':'var(--bg2)'};border:1px solid ${r.tipo==='reembolso'?'rgba(16,185,129,.3)':'var(--bd)'};border-radius:14px;padding:12px;margin-bottom:8px">
-  <div style="display:flex;align-items:start;gap:10px">
-    <input type="checkbox" data-gmidx="${i}" ${r.selected?'checked':''} style="margin-top:3px;width:16px;height:16px;flex-shrink:0;cursor:pointer">
-    <div style="flex:1;min-width:0">
-      <div style="display:flex;justify-content:space-between;align-items:start">
-        <div>
-          <p style="font-weight:700;font-size:13px">${esc(r.merchant)}</p>
-          <p style="font-size:11px;color:#94a3b8">${esc(r.app)} · ${r.date} ${r.time}</p>
-          ${r.itemsSummary?`<p style="font-size:11px;color:#64748b;margin-top:2px">${esc(r.itemsSummary)}</p>`:''}
-          ${r.orderId?`<p style="font-size:10px;color:#475569;font-family:monospace">Pedido: ${esc(r.orderId)}</p>`:''}
-        </div>
-        <div style="text-align:right;flex-shrink:0;margin-left:8px">
-          <p style="font-weight:700;font-size:14px;color:${r.tipo==='reembolso'?'#10b981':'var(--tx)'}">${r.tipo==='reembolso'?'+':'-'}${fS(Math.abs(r.amount))}</p>
-          <span style="font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;background:${r.tipo==='reembolso'?'rgba(16,185,129,.2)':'rgba(99,102,241,.2)'};color:${r.tipo==='reembolso'?'#34d399':'#a5b4fc'}">${r.tipo==='reembolso'?'💚 REEMBOLSO':'💳 CARGO'}</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>`).join('')}
+${importable.map((r,i)=>gmailCard(r,i)).join('')}
 <button class="btn bp" id="confirmGmailBtn" ${!selected.length?'disabled':''}>✅ Importar ${selected.length} transacción${selected.length!==1?'es':''}</button>`:''}
 
 ${skipped.length?`
