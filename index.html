@@ -965,8 +965,49 @@ async function doPDF(e){
     const data=await b64(f);
     const pend=S.txs.filter(t=>t.entity===S.entity&&t.status!=='reconciled');
     const sum=pend.map(t=>`ID:${t.id}|${t.card}|${t.merchant}|${t.amount}${t.currency}|${t.date}`).join('\n');
-    const prompt=`Concilia este estado de cuenta con las transacciones registradas.\nTRANSACCIONES:\n${sum||'Ninguna'}\nSolo JSON:\n{"card_name":"nombre","cut_date":"YYYY-MM-DD","total_balance":número,"currency":"MXN","statement_txs":[{"merchant":"...","amount":número,"date":"YYYY-MM-DD","matched_id":"ID o null","status":"matched|unrecognized"}],"summary":"resumen 2-3 líneas"}`;
-    const raw=await callClaude([{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data}},{type:'text',text:prompt}]}]);
+    const prompt=`Eres un experto en conciliación de estados de cuenta bancarios mexicanos.
+
+TAREA: Extrae TODOS los cargos/compras de este estado de cuenta y concílialos con las transacciones ya registradas.
+
+REGLAS DE EXTRACCIÓN (aplica según el banco detectado):
+1. INCLUYE solo cargos/compras/consumos. EXCLUYE: pagos recibidos, abonos, intereses, IVA, comisiones bancarias automáticas.
+2. BBVA/Bancomer: busca columna "Cargo" o "Retiro". Fecha formato DD/MM/AAAA.
+3. Banamex/Citibanamex: busca "Cargo". MSI aparece como "(001:003)" al final — inclúyelo. Fecha DD/MM/AAAA.
+4. Santander: busca "Importe" en sección "Detalle de movimientos". Fecha DD/MM/AAAA.
+5. American Express MX: formato narrativo "DD de MES: NOMBRE_COMERCIO $MONTO". Incluye RFC si aparece. Fecha "DD de MONTH" convertirla a YYYY-MM-DD.
+6. Morgan Stanley: en inglés. Busca columna "Amount" o "Charges". Fecha MM/DD/YYYY.
+7. Clara: formato fintech limpio. Busca "Monto" o "Importe". Incluye descripción completa.
+8. Formato Universal CONDUSEF (todos los bancos desde oct 2024): sección "Detalle de movimientos" con columnas estandarizadas.
+
+IDENTIFICACIÓN DE SALDO TOTAL: busca "Total a pagar", "Saldo a pagar", "Nuevo saldo", "Amount Due" o equivalente.
+FECHA DE CORTE: busca "Fecha de corte", "Cut-off date", "Período hasta", "Al día".
+
+TRANSACCIONES YA REGISTRADAS EN LA APP:
+${sum||'Ninguna aún — extrae todo lo que encuentres'}
+
+CONCILIACIÓN: Para cada cargo del estado de cuenta, compara contra las registradas usando:
+- Nombre de comercio similar (ignora mayúsculas, abreviaciones)
+- Monto igual o muy cercano (±1%)
+- Fecha dentro de 7 días
+
+Responde ÚNICAMENTE con JSON válido, sin texto previo ni posterior:
+{
+  "card_name": "banco detectado y últimos 4 dígitos si aparecen",
+  "cut_date": "YYYY-MM-DD",
+  "total_balance": número,
+  "currency": "MXN",
+  "statement_txs": [
+    {
+      "merchant": "nombre exacto del comercio",
+      "amount": número,
+      "date": "YYYY-MM-DD",
+      "matched_id": "ID o null",
+      "status": "matched|unrecognized"
+    }
+  ],
+  "summary": "Banco: X. Período: X. Total cargos encontrados: N por $X MXN. Conciliados: N. No reconocidos: N."
+}`;
+    const raw=await callClaude([{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data}},{type:'text',text:prompt}]}],3000);
     const res=sj(raw);
     if(res.statement_txs){
       const ids=res.statement_txs.filter(t=>t.matched_id).map(t=>t.matched_id);
