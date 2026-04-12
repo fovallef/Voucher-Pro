@@ -3,6 +3,9 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -104,7 +107,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;ba
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;background:#020617;color:#fff;gap:8px"><div style="font-size:56px">💳</div><p style="font-size:20px;font-weight:800"><span style="color:#6366f1">Voucher</span>Pro</p><p style="font-size:13px;color:#64748b" id="loadMsg">Cargando v2.7b…</p></div></div>
 
 <script>
 'use strict';
@@ -123,7 +126,7 @@ window.addEventListener('unhandledrejection',function(e){
 // ═══════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════
-const APP_VERSION='v2.7b · 11 Apr 2026';
+const APP_VERSION='v2.7c · 11 Apr 2026';
 const DEFAULT_PCARDS=['American Express','BBVA','Santander','Banamex','Morgan Stanley'];
 const DEFAULT_ECARDS=['Clara'];
 const DEFAULT_MSI_CARDS=['American Express','BBVA','Banamex'];
