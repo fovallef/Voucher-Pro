@@ -780,6 +780,11 @@ function rSettings(){
   <p style="font-size:12px;color:#64748b;margin-bottom:10px">Activa: •••••••••••${S.apiKey.slice(-6)}</p>
   <button id="changeKeyBtn" class="btn bs">🔑 Cambiar API Key</button>
 </div>
+<div class="card" style="border-color:rgba(239,68,68,.3)">
+  <p style="font-weight:700;font-size:13px;margin-bottom:4px;color:#ef4444">⚠️ Zona de peligro</p>
+  <p style="font-size:12px;color:#64748b;margin-bottom:10px">Borra todas las transacciones. Tus categorías y tarjetas personalizadas se conservan.</p>
+  <button id="clearBtn" class="btn br">🗑️ Borrar todos los registros</button>
+</div>
 <div class="card">
   <p style="font-weight:700;font-size:12px;margin-bottom:6px">Configuración actual</p>
   <p style="font-size:11px;color:#64748b;line-height:1.8">👤 Personal: ${S.pCards.join(' · ')}<br>🏢 Empresa: ${S.eCards.join(' · ')} (CFDI)<br>📅 MSI: ${S.msiCards.join(' · ')}<br>💱 Monedas: MXN · USD · EUR · GBP · CAD<br>🔁 Recurrentes: automáticos<br>🤖 Motor: Claude claude-sonnet-4-20250514</p>
@@ -836,6 +841,12 @@ function attachSettings(){
   document.getElementById('sampleBtn')?.addEventListener('click',loadSample);
   document.getElementById('exportBtn')?.addEventListener('click',doExport);
   document.getElementById('changeKeyBtn')?.addEventListener('click',()=>{if(confirm('¿Cambiar API Key?')){S.apiKey='';persist();render();}});
+  document.getElementById('clearBtn')?.addEventListener('click',()=>{
+    if(!confirm('¿Borrar TODOS los registros?\nEsta acción no se puede deshacer.'))return;
+    if(!confirm('Segunda confirmación: ¿estás seguro?\nSe eliminarán '+S.txs.length+' transacciones.'))return;
+    S.txs=[];persist();render();
+    setTimeout(()=>alert('✅ Todos los registros han sido eliminados.'),100);
+  });
 }
 
 // ═══════════════════════════════════════════════════
