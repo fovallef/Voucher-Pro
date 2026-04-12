@@ -164,7 +164,7 @@ function load(){
 async function claude(msgs,maxTok=2000){
   const r=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-request-header':'true'},
+    headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTok,messages:msgs})
   });
   if(!r.ok){const e=await r.json();throw new Error(e.error?.message||'Error API '+r.status);}
