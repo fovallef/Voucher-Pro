@@ -1,246 +1,174 @@
 # 💳 VoucherPro
 
-**Personal credit card expense tracking and reconciliation app.**  
-Built as a PWA (Progressive Web App) hosted on GitHub Pages.  
-Powered by Claude Vision AI · Anthropic
+> **v4.3 · April 2026**  
+> A personal and business expense tracking PWA powered by Claude AI — scan vouchers, reconcile statements, and import transactions from Gmail. No backend. No install. Runs entirely in your browser.
 
-**Current version: v3.8 · 12 Apr 2026**
-
------
-
-## 🚀 Access
-
-**URL:** https://fovallef.github.io/Voucher-Pro/
-
-Install from Safari on iPhone: `Share → Add to Home Screen`
+[![Live App](https://img.shields.io/badge/Live%20App-fovallef.github.io%2FVoucher--Pro-6366f1?style=for-the-badge)](https://fovallef.github.io/Voucher-Pro/)
+![Platform](https://img.shields.io/badge/Platform-iOS%20Safari%20%7C%20PWA-black?style=for-the-badge)
+![AI](https://img.shields.io/badge/AI-Claude%20by%20Anthropic-orange?style=for-the-badge)
 
 -----
 
-## ✨ Features
+## What It Does
+
+VoucherPro helps you track every peso (and dollar) you spend — by scanning physical vouchers with your camera, importing transactions from Gmail, manually logging expenses, and reconciling everything against your bank statements automatically with AI.
+
+Designed for **Mexico-based users** with personal and business credit cards.
+
+-----
+
+## Features
 
 ### 📷 Voucher Scanning
 
-- Take a photo or select from gallery
-- Claude Vision automatically extracts: merchant, amount, date, time, card, category
-- **Two-pass system**: full extraction + simplified fallback if needed
-- **Image compression**: photos stored at 480px grayscale JPEG 35% (~20KB vs ~3MB original). Claude receives full-resolution for OCR, compressed version is stored
-- **Circular image recycling**: images from reconciled/approved transactions older than 60 days are automatically purged on startup. Transaction data (amount, merchant, date, etc.) is never deleted
-- Optional **notes field** per voucher
-- Terminal badge displayed (`📟 Terminal: Getnet · *7848`)
-- **Duplicate detection**: alerts before saving if a matching transaction (same merchant + amount + card within 3 days) already exists
-
-### 📟 Supported Mexican Payment Terminals (v3.8)
-
-|Terminal                      |Bank / Fintech  |Amount field            |
-|------------------------------|----------------|------------------------|
-|Getnet                        |Santander       |`Import =` / `Importe =`|
-|BBVA own terminal             |BBVA            |`TOTAL A PAGAR`         |
-|Mifel / Smart Payment Services|Mifel           |`TOTAL MXN`             |
-|Mercado Pago Point            |Fintech         |`Total $X`              |
-|EVO Payments International    |International   |`Monto $X`              |
-|50CBS                         |Generic         |`Total: X MXN`          |
-|Clip                          |Fintech         |`Total`                 |
-|iZettle / Zettle (PayPal)     |Fintech         |`Total`                 |
-|Square                        |Fintech         |`Total`                 |
-|Banorte own terminal          |Banorte         |`Importe`               |
-|Banamex / Citibanamex         |Banamex         |`Importe`               |
-|Santander own terminal        |Santander       |`Importe`               |
-|HSBC                          |HSBC            |`Importe`               |
-|Inbursa                       |Inbursa         |`Importe`               |
-|Sr. Pago                      |Fintech         |`Total`                 |
-|American Express own          |Amex            |`Importe`               |
-|Any other                     |Generic fallback|Largest number visible  |
-
-### ➕ Manual Entry
-
-- Register expenses without scanning a voucher
-- **37 one-tap templates**: Netflix ($219/$299), Spotify, Prime Video ad-free ($99), Meli+ ($149), Apple TV+, YouTube Premium, iCloud+, Microsoft 365, Claude Pro, ChatGPT Plus, Costco membership, Amex annual fees by tier, and more
-- Prices updated for Mexico 2026
-- **Monthly recurring toggle** — auto-registers every month
-- MSI (interest-free installments) support for Amex, BBVA, Banamex
-- **Duplicate detection**: warns before saving manual entries that match existing records
+- Point your camera at any payment voucher — Claude reads it automatically
+- Supports all major Mexican POS terminals: **Getnet, Clip, iZettle, Square**
+- Smart merchant detection: distinguishes the business name from the terminal brand
+- Auto-maps `TECH/MasterCard` → Clara corporate card
+- Two-pass extraction: primary structured prompt + fallback for difficult images
+- Detects refunds/chargebacks and marks them as positive income
+- Shows terminal name and last 4 card digits in the review screen
 
 ### 📧 Gmail Import
 
-- OAuth 2.0 connection with Gmail (one-time authorization)
-- Searches emails from **Rappi, Uber Eats, DiDi Food, Amazon** (last 45 days)
-- Claude classifies each email with strict rules:
-  - 💳 **Real charge** — confirmed and billed order (must have a numeric amount)
-  - 💚 **Refund** — money returned (positive income)
-  - 🚫 **Scheduled order** — ignored automatically
-  - 🚫 **Shipping notification / promo / marketing** — ignored automatically
-- Detail screen per email: subject, order summary, order number
-- Editable fields before approving: amount, card, category, merchant, notes
-- Approval flow: **⏳ Pending → ✅ Approve / ❌ Reject / ↩️ Undo Approval**
-- Only approved items are recorded as transactions
-- **Automatic duplicate skip**: already-imported emails are never re-imported
+- Connects via Google OAuth — read-only, one-time authorization
+- Searches the last 45 days for delivery and shopping emails
+- Supported services: **Rappi, Uber Eats, DiDi Food, Amazon**
+- **Smart classification by Claude:**
+  - 💳 Real charges → imported
+  - 💚 Refunds → imported as positive income
+  - 🚫 Scheduled/programmed orders → ignored (not charged yet)
+  - 🚫 Cancellations and marketing → ignored
+- Select/deselect individual transactions before confirming import
+- Amazon orders from Hotmail: set up a forward rule to Gmail and they appear automatically
 
-> **For Amazon orders from Hotmail:** Set up auto-forwarding of amazon.com.mx emails to your Gmail in Hotmail Settings.
+### ➕ Manual Expenses
 
-### 📋 History
+- 37 one-tap templates with current Mexico 2026 prices
+- Streaming: Netflix ($219/$299), Disney+, Max, Prime Video, Apple TV+, YouTube Premium
+- Music: Spotify Individual/Duo/Family
+- Shopping memberships: Amazon Prime, **Meli+**, Costco
+- Tech: Apple One, iCloud+, Microsoft 365, Claude Pro, ChatGPT Plus, Google One
+- Card fees: Amex Platinum/Gold/Green annual fees, BBVA, Banamex
+- Business: Google Workspace, AWS, Azure, Microsoft 365 Business, Slack, Zoom
+- Toggle auto-monthly recurrence on any expense
+- MSI (months without interest) support for Amex, BBVA, and Banamex
 
-- Full view of all transactions
-- Filters: All / Pending / Reconciled / Disputed / Recurring / Manual
-- **⚠️ Duplicate banner**: yellow warning shown at top if existing duplicate records are detected, with details on which ones to review
-- Inline editing of any field
-- Individual delete with confirmation
-- Notes displayed with 📝
+### 🔄 Monthly Reconciliation
 
-### 🔄 Reconciliation
-
-- Upload bank statement as PDF
-- Claude extracts charges and reconciles against registered vouchers
-- **Rich post-analysis summary**: bank name, cut date, total due, charges identified
-- Unrecognized charges with 3 actions: register, mark recurring, dispute
-- **Per-card view**: pending vouchers + upcoming cut date per card
-- **Statement history** with metrics per period
-- Cut date auto-extracted from PDF and saved to card catalog
+- Upload a PDF bank statement — Claude extracts all charges and matches them against your logged vouchers
+- Supported banks: **BBVA, Banamex/Citibanamex, Santander, American Express MX, Morgan Stanley, Clara**
+- Also supports the universal CONDUSEF format (Oct 2024+)
+- Post-analysis summary card showing: cut date, bank, charges identified, total amount due
+- Unrecognized charges: register as new expense, mark as subscription, or dispute
+- Statement history log with metrics per upload (charges / reconciled / unrecognized)
+- Auto-extracts cut day from statement and stores it per card
 
 ### 📊 Dashboard
 
-- Pie chart by spending category (MXN)
-- Bar chart by card
-- Current vs previous month comparison
-- USD spending tracked separately
+- Spending by category (pie chart, MXN)
+- Spending by card (bar chart)
+- Month-over-month comparison
+- USD expenses tracked separately
 - Monthly recurring total with annual estimate
 
-### ⚙️ Settings
+### 👤 / 🏢 Personal & Business Profiles
 
-- **Anthropic API Key** — for Claude Vision scanning
-- **Google Client ID** — for Gmail import
-- **Card catalog**: add, rename, delete, set cut day (📅)
-- **Category catalog**: add, rename, delete custom categories
-- **Export CSV** — 14 columns including RFC, CFDI Folio, Recurring, Manual flags
-- **Import CSV** — restore from backup, auto-detects and skips duplicates
-- Storage indicator: shows vouchers with images vs. data-only (purged)
-- Delete all records (double confirmation required)
+**Personal cards:** American Express, BBVA, Santander, Banamex, Morgan Stanley  
+**Business cards:** Clara  
+**Personal categories (15):** Restaurants, Supermarket, Gas, Health/Pharmacy, Entertainment, Travel, Clothing, Education, Home Services, Home/Hardware, Subscriptions, Auto, Fees/Annual, **Interest & Finance Charges**, Other  
+**Business categories (12):** Per Diem/Food, Transport, Lodging, Suppliers, Advertising, Technology, Office Supplies, Training, Client Entertainment, Bank Fees, **Interest & Finance Charges**, Other
 
------
+### 💾 Data & Export
 
-## 👤 Profiles
-
-### Personal
-
-5 cards: American Express, BBVA, Santander, Banamex, Morgan Stanley  
-14 categories including Interest Charges and Annual Fees  
-MSI available on Amex, BBVA, Banamex  
-Multi-currency: MXN, USD, EUR, GBP, CAD
-
-### 🏢 Business
-
-Card: Clara  
-11 categories  
-CFDI fields: Supplier RFC + Folio/UUID  
-📲 WhatsApp button to request invoice
+- All data stored in browser localStorage — private, no servers
+- Export to CSV (14 columns including Recurring, Manual, RFC, CFDI Folio)
+- Import from CSV with automatic duplicate detection
+- CFDI fields (RFC + Folio) for business expenses → WhatsApp invoice request button
 
 -----
 
-## 💾 Storage Architecture
+## Tech Stack
 
-|Scenario              |Size per voucher|Capacity (5MB localStorage)|
-|----------------------|----------------|---------------------------|
-|Original iPhone photo |~3MB            |~1–2 vouchers              |
-|**Compressed (v3.6+)**|**~20KB**       |**~250 vouchers**          |
-
-**Circular recycling strategy:**
-
-- Images are automatically purged from reconciled/approved transactions older than 60 days
-- Transaction metadata (amount, merchant, date, category, card) is **never deleted**
-- At ~30 vouchers/month: ~7 months of images before any purging needed
-- With auto-purge enabled: effectively unlimited capacity
-
------
-
-## 🛠️ Tech Stack
-
-|Component |Technology                                   |
-|----------|---------------------------------------------|
-|Frontend  |HTML5 + CSS3 + Vanilla JavaScript            |
-|AI        |Claude Vision API (Anthropic) — claude-sonnet|
-|Charts    |Chart.js 4.4.0                               |
-|Gmail Auth|Google Identity Services (OAuth 2.0)         |
-|Storage   |Device localStorage                          |
-|Hosting   |GitHub Pages                                 |
-|Format    |Installable PWA (no App Store needed)        |
-
-**Architecture:** Single-file PWA split into 2 `<script>` blocks for Safari iOS compatibility (~80KB limit per block). Both scripts minified with jsmin before each release.
-
------
-
-## 📁 Repository Files
-
-|File        |Description                             |
+|Layer       |Technology                              |
 |------------|----------------------------------------|
-|`index.html`|Full app (core + Gmail module, minified)|
-|`README.md` |This document                           |
+|Frontend    |Vanilla HTML/CSS/JS — no frameworks     |
+|AI Vision   |Claude API (claude-sonnet) via Anthropic|
+|Charts      |Chart.js 4.4                            |
+|Gmail       |Google OAuth 2.0 + Gmail API            |
+|Storage     |Browser localStorage                    |
+|Hosting     |GitHub Pages                            |
+|Distribution|PWA — installable to iOS home screen    |
 
 -----
 
-## 🔐 Initial Setup
+## Setup
 
 ### 1. Anthropic API Key
 
-1. Get your key at [console.anthropic.com](https://console.anthropic.com)
-1. In the app: ⚙️ Settings → API Key → Save
+Go to ⚙️ **Config → API Key** and enter your Claude API key from [console.anthropic.com](https://console.anthropic.com).
 
-### 2. Google Client ID (for Gmail Import)
+### 2. Gmail Integration (optional)
+
+To import transactions from Gmail:
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-1. Create project → enable **Gmail API**
-1. Credentials → OAuth 2.0 → Web Application
-1. Authorized origin: `https://fovallef.github.io`
-1. In the app: ⚙️ Settings → Google Client ID → Save
-1. In Google Cloud → Audience → Test users → add your Gmail address
+1. Create a project → Enable **Gmail API**
+1. Create an **OAuth 2.0 credential** (Web Application type)
+1. Add authorized JavaScript origin: `https://fovallef.github.io`
+1. Copy the Client ID → paste it in ⚙️ **Config → Gmail Integration**
+1. Add your Gmail address as a test user in the OAuth consent screen
 
-### 3. Card Cut Dates
+### 3. Amazon from Hotmail (optional)
 
-- ⚙️ Settings → tap 📅 next to each card to set manually
-- Or upload a PDF bank statement — cut date is extracted and saved automatically
+In your Hotmail account, create a rule to forward all emails from `amazon.com.mx` and `amazon.com` to your Gmail. They will then appear in the Gmail import tab automatically.
 
------
+### 4. Install as PWA on iPhone
 
-## 🔄 Release Process
-
-For every code update:
-
-1. Apply changes
-1. Audit (49 critical functions + 28 state variables + routing + bug checks)
-1. Minify both script blocks with jsmin (required for Safari iOS)
-1. Validate syntax with Node.js `--check` on each script
-1. Upload `index.html` to GitHub
-1. Wait 1–2 min → close app completely → reopen from home screen icon
+1. Open `https://fovallef.github.io/Voucher-Pro/` in Safari
+1. Tap the share button → **“Add to Home Screen”**
+1. Launch from your home screen icon — runs in full-screen app mode
 
 -----
 
-## 📅 Version History
+## Update Protocol
 
-|Version|Date    |Main Changes                                                            |
-|-------|--------|------------------------------------------------------------------------|
-|v1.0   |Mar 2026|MVP: basic scanning, history, CSV export                                |
-|v2.0   |Mar 2026|Business profile, CFDI, multi-currency, MSI                             |
-|v2.4   |Apr 2026|Dashboard, PDF reconciliation, recurring templates                      |
-|v2.7   |Apr 2026|Gmail OAuth integration (first version)                                 |
-|v2.8   |Apr 2026|Improved scanning for Getnet and Mexican terminals                      |
-|v3.0   |Apr 2026|Split into 2 scripts (Safari iOS fix)                                   |
-|v3.2   |Apr 2026|Statement history, rich post-analysis summary                           |
-|v3.3   |Apr 2026|Card cut dates, per-card reconcile view, CSV import                     |
-|v3.4   |Apr 2026|Gmail detail screen with approve/reject, notes field, mCard bugfix      |
-|v3.5   |Apr 2026|Improved voucher scan prompt (Mifel, BBVA own terminal, EVO Payments)   |
-|v3.6   |Apr 2026|Image compression (~20KB/voucher), circular purge, Mercado Pago terminal|
-|v3.7   |Apr 2026|Comprehensive terminal coverage (17 terminals), improved card mapping   |
-|v3.8   |Apr 2026|Duplicate detection on scan/manual/Gmail, history dupe banner           |
+> ⚠️ **Do not uninstall or re-anchor the app. Only update `index.html` on GitHub → wait 2 min → close app from multitasking → reopen from icon. Data is preserved.**
+
+VoucherPro uses a two-file architecture:
+
+- `index.html` — shell with CSS and loader (~8KB)
+- `app.js` — full application logic (~106KB)
 
 -----
 
-## ⚠️ Important Notes
+## Architecture Notes
 
-- **Local data**: Everything lives in the iPhone’s `localStorage`. Not synced to the cloud.
-- **Backup**: Export CSV regularly from ⚙️ Settings and save to OneDrive.
-- **Updating the app**: Never remove the home screen icon — just update `index.html` on GitHub and reopen.
-- **Gmail in Testing mode**: The app is in “Testing” state on Google Cloud — only works with emails added as test users in Google Cloud Console.
-- **Amazon from Hotmail**: Set up auto-forwarding in Hotmail → Gmail so orders appear in the import.
-- **Duplicate detection window**: 3 days — transactions with same merchant + amount + card within 3 days trigger a warning. Recurring transactions are excluded from this check.
+- **No backend** — the app calls the Anthropic API directly from the browser using your personal API key
+- **Two-pass voucher scanning** — structured extraction first, simple fallback if needed
+- **Script loading** — uses `<script type="text/plain">` loader technique for Safari iOS compatibility
+- **localStorage** — all transaction data, categories, card configs, and statement history persist across sessions
+- Data is scoped to the browser/device where the PWA is installed
 
 -----
 
-*Built with Claude (Anthropic) · Francisco Ovalle Félix · ONESEC · 2026*
+## Changelog
+
+### v4.3 (Apr 2026)
+
+- Gmail import tab with OAuth integration (Rappi, Uber Eats, DiDi Food, Amazon)
+- Smart email classification: real charges vs scheduled orders vs refunds
+- Statement history log in Reconcile tab
+- Post-analysis summary card (cut date, bank, charge count, total due)
+- Interest & Finance Charges category (personal + business)
+- 37 subscription templates with current Mexico 2026 prices (Meli+, Prime Video, Spotify tiers)
+- Improved voucher scanning for Getnet, Clip, iZettle terminals
+- Two-pass scanning with automatic fallback
+- Safari iOS compatibility fix via external script architecture
+
+-----
+
+## License
+
+Private — personal use by Francisco Ovalle Félix.  
+Powered by [Claude](https://claude.ai) · Built with ❤️ in México
