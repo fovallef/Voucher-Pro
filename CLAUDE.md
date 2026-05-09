@@ -177,14 +177,7 @@ git push origin main
 
 ## v4.5 Pending Features
 
-### 🔴 Critical bugs
-
-**Bug 2 — Statement saved even when Claude fails**
-- `S.statements.unshift(stmt)` runs even when response is `{}`
-- Fix: only save if `res.card_name || (res.statement_txs && res.statement_txs.length > 0)`
-
-**Bug 3 — Empty Claude response shows wrong error**
-- If `sj(raw)` returns `{}`, show specific error: "Claude no pudo extraer datos del PDF. Intenta con otro estado de cuenta."
+*(Sin pendientes conocidos — todos los bugs de v4.4 están implementados.)*
 
 ---
 
@@ -195,7 +188,7 @@ git push origin main
 - **`r.children.length===0`** check in unhandledrejection handler may fail to show error if root has static content from splash screen
 - **processRecurring()** runs on every startup — if clock is wrong it could double-register
 - **Chart.js "Por Tarjeta"** — confirmed working as of v4.3 (was thought to be broken, isn't)
-- **Statement saved on Claude failure** — Bug 2 still pending: `S.statements.unshift(stmt)` runs even on `{}` response
+- **Statement on Claude failure** — resuelto: solo se guarda si `res.card_name` o `res.statement_txs.length > 0`, de lo contrario lanza error específico
 
 ---
 
