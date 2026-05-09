@@ -1,0 +1,389 @@
+# CLAUDE.md — VoucherPro Project Context
+
+> This file is the authoritative context document for Claude Code.  
+> Read this entirely before making any changes to the codebase.
+
+---
+
+## Project Overview
+
+**VoucherPro** is a personal + business expense tracking PWA for Francisco Ovalle Félix (CDMX, México).  
+- Scans physical payment vouchers via camera (Claude Vision API)
+- Imports transactions from Gmail (Rappi, Uber Eats, DiDi Food, Amazon)
+- Reconciles bank statements (PDF → Claude AI)
+- Hosted on GitHub Pages: `https://fovallef.github.io/Voucher-Pro/`
+- Installed as PWA on iPhone 17 Pro Max (iOS 18, Safari)
+
+---
+
+## Repository
+
+```
+github.com/fovallef/Voucher-Pro  (public, branch: main)
+├── index.html    (~8KB)    Shell: CSS + Chart.js CDN + JS loader
+├── app.js        (~106KB)  Full application logic
+├── README.md               User-facing documentation
+└── CLAUDE.md               This file — Claude Code context
+```
+
+**Live URL:** `https://fovallef.github.io/Voucher-Pro/`  
+**Deploy time:** ~2 minutes after push to main
+
+---
+
+## CRITICAL — Safari iOS Constraints
+
+> Violating these will cause silent blank screen failures. Francisco has spent hours debugging these.
+
+1. **No inline scripts > ~80KB** — Safari iOS kills them silently with no error
+2. **Solution in use:** `<script type="text/plain" id="vp-code">` — JS embedded as non-executable text, tiny 3-line inline script reads `.textContent` and appends it as a real `<script>` tag
+3. **Blob URL approach — REJECTED** — Safari blocks `URL.createObjectURL()` for script loading
+4. **fetch() for app.js — REJECTED** — returns 404 in Safari PWA context
+5. **External `<script src="app.js">` alone — REJECTED** — also failed in testing
+6. **Nested template literals** — crash Safari parser. Always extract to helper functions instead
+7. **`'use strict'`** — keep it, it works fine
+8. **Chart.js CDN must load BEFORE app.js** in index.html
+
+---
+
+## Architecture
+
+### index.html structure
+```html
+<head>
+  <!-- meta tags, CSS inline -->
+</head>
+<body>
+  <div id="root"><!-- static splash screen --></div>
+  <script src="Chart.js CDN"></script>
+  <script type="text/plain" id="vp-code">
+    <!-- ENTIRE app.js content embedded here -->
+  </script>
+  <script>
+    // 3-line loader: reads vp-code.textContent, creates script tag
+    var c = document.getElementById('vp-code').textContent;
+    var s = document.createElement('script');
+    s.textContent = c;
+    document.head.appendChild(s);
+  </script>
+</body>
+```
+
+### app.js structure (106KB, vanilla JS)
+- `'use strict'` at top
+- Global error handlers (`window.onerror`, `unhandledrejection`)
+- CONSTANTS section (APP_VERSION, DEFAULT_PCARDS, TEMPLATES, etc.)
+- STATE object `S` — single source of truth
+- `loadState()` / `persist()` — localStorage read/write
+- `render()` + `attach*()` — main render loop (innerHTML replacement)
+- Feature modules: scan, manual, gmail, history, reconcile, dashboard, settings
+- Helper functions at bottom
+
+### State Object `S`
+```javascript
+S = {
+  tab, screen, entity,           // navigation
+  apiKey, gmailClientId,         // credentials
+  txs,                           // all transactions array
+  pCards, eCards, msiCards,      // card lists
+  pCats, eCats,                  // category lists
+  statements,                    // statement history array
+  reconRes, insRes,              // reconciliation results
+  cur, manualForm,               // current voucher / form state
+  gmailToken, importedEmailIds,  // gmail state
+  gmailImportResults,            // gmail scan results
+  loading, error,                // UI state
+  templates                      // expense templates
+}
+```
+
+### localStorage Keys
+| Key | Content |
+|---|---|
+| `vp_k` | Anthropic API key |
+| `vp_t` | Transactions array (JSON) |
+| `vp_pc` | Personal cards |
+| `vp_ec` | Business cards |
+| `vp_pcat` | Personal categories |
+| `vp_ecat` | Business categories |
+| `vp_en` | Current entity (personal/empresarial) |
+| `vp_st` | Statement history |
+| `vp_gcid` | Google OAuth Client ID |
+| `vp_emids` | Processed Gmail email IDs |
+
+---
+
+## Credentials & Config
+
+| Item | Value |
+|---|---|
+| Google OAuth Client ID | `497771173219-3nimahamn6rb2jtnmlvc0nru1btbjrqk.apps.googleusercontent.com` |
+| Google OAuth authorized origin | `https://fovallef.github.io` |
+| Google OAuth test user | `frovfe@gmail.com` |
+| Google OAuth status | Testing mode (not published) |
+| WhatsApp facturación Clara | `+525629152062` |
+| Anthropic model | `claude-sonnet-4-20250514` |
+
+---
+
+## Personal Cards
+`American Express, BBVA, Santander, Banamex, Morgan Stanley`
+
+## Business Cards
+`Clara`
+
+## MSI Cards (Meses Sin Intereses)
+`American Express, BBVA, Banamex`
+
+---
+
+## Key Functions
+
+| Function | Purpose |
+|---|---|
+| `callClaude(msgs, maxTok)` | Base API call to Anthropic |
+| `doImg(e)` | Two-pass voucher scanning (camera/gallery) |
+| `doPDF(e)` | Bank statement reconciliation via Claude |
+| `doGmailImport()` | Gmail OAuth + search + Claude parsing |
+| `parseEmailWithClaude(email)` | Classify email as cargo_real/programado/reembolso/otro |
+| `gmailCard(r,i)` | Render Gmail result card (helper, avoids nested templates) |
+| `stmtCard(s)` | Render statement history card (helper, avoids nested templates) |
+| `mCard(str)` | Map card type string → known card name |
+| `mCat(hint,cats,entity)` | Map category hint → category ID |
+| `processRecurring()` | Auto-register monthly recurrences on startup |
+| `sj(raw)` | Safe JSON parser, strips markdown fences |
+| `b64(f)` | FileReader → base64 string |
+| `uid()` | Generate unique ID |
+| `esc(s)` | HTML escape string |
+
+---
+
+## Release Protocol
+
+```bash
+# NEVER have Francisco uninstall or re-anchor the PWA — localStorage data will be lost
+
+# 1. Edit app.js and/or index.html
+# 2. Commit and push to main
+git add .
+git commit -m "feat: description of change"
+git push origin main
+# 3. Wait 2 minutes for GitHub Pages
+# 4. Francisco: close app from multitasking → reopen from home screen icon
+# 5. Verify APP_VERSION in header
+```
+
+---
+
+## v4.4 Pending Features (implement in order)
+
+### 🔴 Critical bugs
+
+**Bug 1 — PDF reconciliation fails (CONFIRMED ROOT CAUSE)**
+- Missing `anthropic-beta: pdfs-2024-09-25` header in API call when sending PDF documents
+- Fix: create `callClaudePDF(msgs, maxTok)` function with extra header:
+```javascript
+async function callClaudePDF(msgs, maxTok=3000){
+  const r = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':S.apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true',
+      'anthropic-beta':'pdfs-2024-09-25'   // ← THIS IS THE FIX
+    },
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTok,messages:msgs})
+  });
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${r.status}`);}
+  const d=await r.json();
+  return d.content?.[0]?.text||'';
+}
+```
+- Use `callClaudePDF()` in `doPDF()` instead of `callClaude()`
+
+**Bug 2 — Statement saved even when Claude fails**
+- `S.statements.unshift(stmt)` runs even when response is `{}`
+- Fix: only save if `res.card_name || (res.statement_txs && res.statement_txs.length > 0)`
+
+**Bug 3 — Empty Claude response shows wrong error**
+- If `sj(raw)` returns `{}`, show specific error: "Claude no pudo extraer datos del PDF. Intenta con otro estado de cuenta."
+
+### 📧 Gmail fixes (in order of impact)
+
+4. **Pre-classify by subject without calling Claude:**
+```javascript
+function preClassifySubject(subject){
+  const s = subject.toLowerCase();
+  if(s.includes('fue entregado') || s.includes('pedido entregado')) return 'cargo_real';
+  if(s.includes('programad') || s.includes('scheduled') || s.includes('creado con éxito')) return 'pedido_programado';
+  if(s.includes('reembolso') || s.includes('devolución') || s.includes('refund')) return 'reembolso';
+  if(s.includes('cancelad')) return 'cancelado';
+  return null; // needs Claude
+}
+```
+
+5. **Extract amount by regex before sending to Claude:**
+```javascript
+function extractAmount(body){
+  const patterns = [
+    /total\s+pagado[\s:$]*([0-9,]+\.?\d*)/i,
+    /cargo\s+neto[\s:$]*([0-9,]+\.?\d*)/i,
+    /total[\s:$]*([0-9,]+\.?\d*)\s*mxn/i,
+    /\$\s*([0-9,]+\.\d{2})/,
+  ];
+  for(const p of patterns){
+    const m = body.match(p);
+    if(m) return parseFloat(m[1].replace(/,/g,''));
+  }
+  return null;
+}
+```
+
+6. **Strip HTML promo banners** — remove content before the order summary section:
+```javascript
+function cleanEmailBody(html){
+  // Remove everything before the merchant/order section
+  const stripped = html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
+  // Focus on lines with amounts
+  const lines = stripped.split(/[.\n]/);
+  const relevant = lines.filter(l => 
+    /\$|total|pagado|pedido|orden|order|entregado|monto|importe/i.test(l)
+  );
+  return relevant.join('. ').slice(0, 2000);
+}
+```
+
+7. **Raise max_tokens to 1000** in `parseEmailWithClaude`
+
+8. **Improved prompt with Rappi MX explicit examples** — add to parseEmailWithClaude:
+```
+FORMATOS RAPPI MÉXICO:
+- "Order Programada" + "creado con éxito" + "Total costos" → pedido_programado (NO cobrado)
+- "fue entregado" + "Total pagado $X" → cargo_real (SÍ cobrado)
+- "Reembolso" → reembolso
+El monto real cobrado es "Total pagado", NO "Total costos" (que incluye descuentos)
+```
+
+### 📊 Dashboard — ALREADY FIXED
+- "Por Tarjeta" chart is working (confirmed in screenshot). Remove from pending list.
+
+### ⚙️ Config — API widget
+9. On settings screen load, make a minimal test call to validate API key
+10. Counter: track approximate tokens per session in `S.sessionTokens`
+11. Add button: `window.open('https://console.anthropic.com/settings/billing')`
+12. In `callClaude`, if error contains `credit_balance` or HTTP 400: set `S.lowCredit=true`, show banner
+
+### 📋 History — record editing
+13. Add edit button to each history record
+14. On tap → open modal with all fields editable (merchant, amount, currency, date, time, card, category, notes, MSI, RFC/CFDI)
+15. On save → update `S.txs`, persist, show "editado" badge
+16. Badge: add `editedAt` field to transaction, show 🖊️ icon in history list
+
+---
+
+## Known Issues / Watch Out
+
+- **Nested template literals** crash Safari — always use helper functions or string concatenation
+- **Gmail import marks ALL searched email IDs as processed** even if classified as "otro" — prevents re-processing on next import. This is intentional but means if Claude misclassifies an email, it won't be retried unless Francisco clears `vp_emids` from localStorage.
+- **`r.children.length===0`** check in unhandledrejection handler may fail to show error if root has static content from splash screen
+- **processRecurring()** runs on every startup — if clock is wrong it could double-register
+- **Chart.js "Por Tarjeta"** — confirmed working as of v4.3 (was thought to be broken, isn't)
+- **Amex PDF reconciliation** — fails due to missing beta header (Bug 1 above). Francisco tested with 316KB Amex PDF.
+
+---
+
+## Email Samples Seen (Rappi MX)
+
+### Type: pedido_programado (IGNORE)
+- From: "Recibos de Rappi"  
+- Subject: "Order Programada"  
+- Body: "tu pedido ha sido creado con éxito", "Total costos: $592.90", "Descuentos: $21.90"  
+- → NOT charged yet. Correctly ignored.
+
+### Type: cargo_real (IMPORT)
+- From: "Recibos de Rappi"  
+- Subject: "Tu pedido de OFFICE DEPOT, 110 - SANTA FE fue entregado"  
+- Body: "Pedido entregado", "Total pagado: $571.00"  
+- → Actually charged. Should be imported but was misclassified as "otro".
+
+**Root cause of misclassification:** HTML body starts with ChatGPT promo banner, dilutes the signal before Claude reads the order data.
+
+---
+
+## Voucher Scanning — Terminals Known to Work
+
+| Terminal | Merchant field | Amount field | Date field |
+|---|---|---|---|
+| Getnet | Line 1-3 (NOT "Getnet") | "Importe $X MXN" | "Fecha: DD/MM/AAAA HH:MM:SS" |
+| Clip | Business name at top | "Monto $X" | "Fecha" |
+| iZettle/Zettle | Business name | "Total $X" | Date field |
+| Amex/bank vouchers | Merchant line | "Importe"/"Total" | Date line |
+
+**TECH/MasterCard** in card type → Clara corporate card (empresarial profile)
+
+---
+
+## Development Workflow for Claude Code
+
+```bash
+# Clone the repo
+git clone https://github.com/fovallef/Voucher-Pro.git
+cd Voucher-Pro
+
+# Files to edit:
+# - app.js: all JavaScript logic
+# - index.html: rebuild after changing app.js (embed app.js into <script type="text/plain">)
+
+# After editing app.js, rebuild index.html:
+python3 rebuild.py  # (create this script — see below)
+
+# rebuild.py template:
+# reads index.html template + app.js
+# embeds app.js into <script type="text/plain" id="vp-code">
+# writes final index.html
+```
+
+### rebuild.py (create this in the repo)
+```python
+#!/usr/bin/env python3
+# rebuild.py — embeds app.js into index.html for Safari iOS compatibility
+
+TEMPLATE = 'index_template.html'  # index.html without the vp-code content
+APP_JS   = 'app.js'
+OUTPUT   = 'index.html'
+
+with open(TEMPLATE) as f: template = f.read()
+with open(APP_JS) as f: js = f.read()
+
+# Replace placeholder with actual JS
+result = template.replace('<!-- APP_JS_PLACEHOLDER -->', js)
+
+with open(OUTPUT, 'w') as f: f.write(result)
+print(f'Built index.html ({len(result):,} bytes)')
+```
+
+---
+
+## Francisco's Profile (for context)
+
+- **Role:** Director General, ONESEC (ciberseguridad CDMX/LATAM)
+- **Device:** iPhone 17 Pro Max, iOS 18
+- **Technical level:** Non-developer — cannot run local dev tools
+- **Language:** Spanish preferred, technical English OK
+- **Preference:** Decisive, structured, actionable responses
+- **App usage:** Personal finance tracking, both personal and business expenses
+
+---
+
+## Version History
+
+| Version | Date | Key changes |
+|---|---|---|
+| v4.3 | Apr 13, 2026 | Gmail OAuth, statement history, Meli+, Safari fix |
+| v4.2 | Apr 2026 | Gmail foundation, refund detection |
+| v4.1 | Apr 2026 | Statement history log, interest categories |
+| v4.0 | Apr 2026 | Two-pass scanning, Getnet/iZettle prompt |
+| v3.x | Apr 2026 | Split architecture (index.html + app.js) |
+| v2.x | Apr 2026 | Single-file, Gmail integration start |
+| v1.x | Apr 2026 | Initial version |
