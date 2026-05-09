@@ -1,6 +1,6 @@
 # 💳 VoucherPro
 
-> **v4.3 · April 2026**  
+> **v4.4 · May 2026**  
 > A personal and business expense tracking PWA powered by Claude AI — scan vouchers, reconcile statements, and import transactions from Gmail. No backend. No install. Runs entirely in your browser.
 
 [![Live App](https://img.shields.io/badge/Live%20App-fovallef.github.io%2FVoucher--Pro-6366f1?style=for-the-badge)](https://fovallef.github.io/Voucher-Pro/)
@@ -33,13 +33,16 @@ Designed for **Mexico-based users** with personal and business credit cards.
 
 - Connects via Google OAuth — read-only, one-time authorization
 - Searches the last 45 days for delivery and shopping emails
-- Supported services: **Rappi, Uber Eats, DiDi Food, Amazon**
+- Supported services: **Rappi, Uber Eats, DiDi Food, Amazon, Zettle, Stripe-billed services (Eleven Labs, etc.), 1Password**
+- **Smart pre-classification by subject** — skips Claude for obvious cases (saves tokens)
+- **Regex amount extraction** — extracts price before sending to Claude when possible
 - **Smart classification by Claude:**
   - 💳 Real charges → imported
   - 💚 Refunds → imported as positive income
   - 🚫 Scheduled/programmed orders → ignored (not charged yet)
   - 🚫 Cancellations and marketing → ignored
 - Select/deselect individual transactions before confirming import
+- Amazon: only processes confirmed receipts — shipping/tracking emails are excluded
 - Amazon orders from Hotmail: set up a forward rule to Gmail and they appear automatically
 
 ### ➕ Manual Expenses
@@ -108,6 +111,10 @@ Designed for **Mexico-based users** with personal and business credit cards.
 
 Go to ⚙️ **Config → API Key** and enter your Claude API key from [console.anthropic.com](https://console.anthropic.com).
 
+- **Test your key** with the "🧪 Probar clave" button — confirms it's valid and has credit
+- **Token counter** shows approximate tokens used in the current session
+- **Low credit banner** appears automatically if your Anthropic balance runs out
+
 ### 2. Gmail Integration (optional)
 
 To import transactions from Gmail:
@@ -137,8 +144,8 @@ In your Hotmail account, create a rule to forward all emails from `amazon.com.mx
 
 VoucherPro uses a two-file architecture:
 
-- `index.html` — shell with CSS and loader (~8KB)
-- `app.js` — full application logic (~106KB)
+- `index.html` — shell with CSS, loader, and embedded app code
+- `app.js` — full application logic (source file)
 
 -----
 
@@ -153,6 +160,28 @@ VoucherPro uses a two-file architecture:
 -----
 
 ## Changelog
+
+### v4.4 (May 2026)
+
+**API & Config:**
+- API key test button — validates key and credit balance on demand
+- Session token counter in Config screen
+- Low-credit warning banner with direct link to Anthropic billing
+- PDF reconciliation fix: added required `anthropic-beta: pdfs-2024-09-25` header (Amex and other PDFs now work)
+
+**History:**
+- Edit button on every transaction — tap to open full edit modal
+- Editable fields: merchant, amount, currency, date, time, card, category, notes, MSI, RFC/CFDI folio
+- "✏ editado" badge shown on modified records with timestamp
+
+**Gmail import:**
+- Added Stripe-billed services (Eleven Labs, and others)
+- Added 1Password subscription receipts
+- Amazon query narrowed to confirmed receipts only (excludes tracking/shipping emails — saves tokens)
+- Pre-classification by email subject (skips Claude for obvious cases)
+- Regex amount extraction before Claude call
+- HTML email body cleaning to strip promo banners
+- Improved Rappi MX prompt with explicit examples
 
 ### v4.3 (Apr 2026)
 
