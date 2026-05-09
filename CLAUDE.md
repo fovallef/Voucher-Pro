@@ -175,32 +175,9 @@ git push origin main
 
 ---
 
-## v4.4 Pending Features (implement in order)
+## v4.5 Pending Features
 
 ### 🔴 Critical bugs
-
-**Bug 1 — PDF reconciliation fails (CONFIRMED ROOT CAUSE)**
-- Missing `anthropic-beta: pdfs-2024-09-25` header in API call when sending PDF documents
-- Fix: create `callClaudePDF(msgs, maxTok)` function with extra header:
-```javascript
-async function callClaudePDF(msgs, maxTok=3000){
-  const r = await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key':S.apiKey,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true',
-      'anthropic-beta':'pdfs-2024-09-25'   // ← THIS IS THE FIX
-    },
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTok,messages:msgs})
-  });
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${r.status}`);}
-  const d=await r.json();
-  return d.content?.[0]?.text||'';
-}
-```
-- Use `callClaudePDF()` in `doPDF()` instead of `callClaude()`
 
 **Bug 2 — Statement saved even when Claude fails**
 - `S.statements.unshift(stmt)` runs even when response is `{}`
@@ -208,77 +185,6 @@ async function callClaudePDF(msgs, maxTok=3000){
 
 **Bug 3 — Empty Claude response shows wrong error**
 - If `sj(raw)` returns `{}`, show specific error: "Claude no pudo extraer datos del PDF. Intenta con otro estado de cuenta."
-
-### 📧 Gmail fixes (in order of impact)
-
-4. **Pre-classify by subject without calling Claude:**
-```javascript
-function preClassifySubject(subject){
-  const s = subject.toLowerCase();
-  if(s.includes('fue entregado') || s.includes('pedido entregado')) return 'cargo_real';
-  if(s.includes('programad') || s.includes('scheduled') || s.includes('creado con éxito')) return 'pedido_programado';
-  if(s.includes('reembolso') || s.includes('devolución') || s.includes('refund')) return 'reembolso';
-  if(s.includes('cancelad')) return 'cancelado';
-  return null; // needs Claude
-}
-```
-
-5. **Extract amount by regex before sending to Claude:**
-```javascript
-function extractAmount(body){
-  const patterns = [
-    /total\s+pagado[\s:$]*([0-9,]+\.?\d*)/i,
-    /cargo\s+neto[\s:$]*([0-9,]+\.?\d*)/i,
-    /total[\s:$]*([0-9,]+\.?\d*)\s*mxn/i,
-    /\$\s*([0-9,]+\.\d{2})/,
-  ];
-  for(const p of patterns){
-    const m = body.match(p);
-    if(m) return parseFloat(m[1].replace(/,/g,''));
-  }
-  return null;
-}
-```
-
-6. **Strip HTML promo banners** — remove content before the order summary section:
-```javascript
-function cleanEmailBody(html){
-  // Remove everything before the merchant/order section
-  const stripped = html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
-  // Focus on lines with amounts
-  const lines = stripped.split(/[.\n]/);
-  const relevant = lines.filter(l => 
-    /\$|total|pagado|pedido|orden|order|entregado|monto|importe/i.test(l)
-  );
-  return relevant.join('. ').slice(0, 2000);
-}
-```
-
-7. **Raise max_tokens to 1000** in `parseEmailWithClaude`
-
-8. **Improved prompt with Rappi MX explicit examples** — add to parseEmailWithClaude:
-```
-FORMATOS RAPPI MÉXICO:
-- "Order Programada" + "creado con éxito" + "Total costos" → pedido_programado (NO cobrado)
-- "fue entregado" + "Total pagado $X" → cargo_real (SÍ cobrado)
-- "Reembolso" → reembolso
-El monto real cobrado es "Total pagado", NO "Total costos" (que incluye descuentos)
-```
-
-### 📊 Dashboard — ALREADY FIXED
-- "Por Tarjeta" chart is working (confirmed in screenshot). Remove from pending list.
-
-### ⚙️ Config — API widget
-9. On settings screen load, make a minimal test call to validate API key
-10. Counter: track approximate tokens per session in `S.sessionTokens`
-11. Add button: `window.open('https://console.anthropic.com/settings/billing')`
-12. In `callClaude`, if error contains `credit_balance` or HTTP 400: set `S.lowCredit=true`, show banner
-
-### 📋 History — record editing
-13. Add edit button to each history record
-14. On tap → open modal with all fields editable (merchant, amount, currency, date, time, card, category, notes, MSI, RFC/CFDI)
-15. On save → update `S.txs`, persist, show "editado" badge
-16. Badge: add `editedAt` field to transaction, show 🖊️ icon in history list
 
 ---
 
@@ -289,7 +195,7 @@ El monto real cobrado es "Total pagado", NO "Total costos" (que incluye descuent
 - **`r.children.length===0`** check in unhandledrejection handler may fail to show error if root has static content from splash screen
 - **processRecurring()** runs on every startup — if clock is wrong it could double-register
 - **Chart.js "Por Tarjeta"** — confirmed working as of v4.3 (was thought to be broken, isn't)
-- **Amex PDF reconciliation** — fails due to missing beta header (Bug 1 above). Francisco tested with 316KB Amex PDF.
+- **Statement saved on Claude failure** — Bug 2 still pending: `S.statements.unshift(stmt)` runs even on `{}` response
 
 ---
 
@@ -305,9 +211,9 @@ El monto real cobrado es "Total pagado", NO "Total costos" (que incluye descuent
 - From: "Recibos de Rappi"  
 - Subject: "Tu pedido de OFFICE DEPOT, 110 - SANTA FE fue entregado"  
 - Body: "Pedido entregado", "Total pagado: $571.00"  
-- → Actually charged. Should be imported but was misclassified as "otro".
+- → Actually charged. **Fixed in v4.4** via `preClassifySubject` (subject contains "fue entregado" → cargo_real without Claude) and `cleanEmailBody` (strips promo banner HTML before sending to Claude).
 
-**Root cause of misclassification:** HTML body starts with ChatGPT promo banner, dilutes the signal before Claude reads the order data.
+**Root cause of past misclassification:** HTML body started with ChatGPT promo banner, diluting the signal before Claude read the order data. Now resolved.
 
 ---
 
@@ -380,6 +286,7 @@ print(f'Built index.html ({len(result):,} bytes)')
 
 | Version | Date | Key changes |
 |---|---|---|
+| v4.4 | May 9, 2026 | PDF beta header fix, API widget (test/tokens/billing), history editing, Gmail expanded (Stripe/1Password/Amazon refined), email pre-classification, regex amount extraction |
 | v4.3 | Apr 13, 2026 | Gmail OAuth, statement history, Meli+, Safari fix |
 | v4.2 | Apr 2026 | Gmail foundation, refund detection |
 | v4.1 | Apr 2026 | Statement history log, interest categories |
