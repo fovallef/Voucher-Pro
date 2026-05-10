@@ -175,9 +175,24 @@ git push origin main
 
 ---
 
-## v4.5 Pending Features
+## v4.5 Features (implemented May 9, 2026)
 
-*(Sin pendientes conocidos — todos los bugs de v4.4 están implementados.)*
+- **Dashboard tab primero** — reordenado como tab default
+- **FAB escaneo persistente** — botón flotante 📷 siempre visible, abre cámara directamente
+- **Navegador de mes en historial** — botones ‹ › para navegar entre meses, label con nombre del mes
+- **Resumen mensual** — card con total MXN/USD y número de transacciones por mes
+- **Buscador en historial** — input de búsqueda por nombre de comercio o tarjeta
+- **Swipe-to-delete** — deslizar fila en historial revela botón 🗑️ (touch events)
+- **Estados :active CSS** — feedback táctil en filas, botones nav, stats boxes
+- **Monto más prominente** — refunds en verde, montos visualmente resaltados
+- **Header gradiente** — fondo degradado indigo en header
+- **Velocidad de gasto** — Dashboard muestra proyección al cierre del mes
+- **Presupuestos por categoría** — Config permite definir límites; Dashboard muestra barra de progreso por categoría con colores semáforo
+- **Fix Amex PDF** — pdfPrompt ahora incluye instrucción JSON-only crítica + formato narrativo Amex MX explícito → Claude siempre devuelve JSON válido
+
+## v4.6 Pending Features
+
+*(Sin pendientes conocidos)*
 
 ---
 
@@ -279,6 +294,7 @@ print(f'Built index.html ({len(result):,} bytes)')
 
 | Version | Date | Key changes |
 |---|---|---|
+| v4.5 | May 9, 2026 | Dashboard first, FAB escaneo, month nav + search + summary in history, swipe-to-delete, spending velocity, budgets per category, Amex PDF fix |
 | v4.4 | May 9, 2026 | PDF beta header fix, API widget (test/tokens/billing), history editing, Gmail expanded (Stripe/1Password/Amazon refined), email pre-classification, regex amount extraction |
 | v4.3 | Apr 13, 2026 | Gmail OAuth, statement history, Meli+, Safari fix |
 | v4.2 | Apr 2026 | Gmail foundation, refund detection |
