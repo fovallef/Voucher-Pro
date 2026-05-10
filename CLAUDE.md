@@ -190,9 +190,16 @@ git push origin main
 - **Presupuestos por categoría** — Config permite definir límites; Dashboard muestra barra de progreso por categoría con colores semáforo
 - **Fix Amex PDF** — pdfPrompt ahora incluye instrucción JSON-only crítica + formato narrativo Amex MX explícito → Claude siempre devuelve JSON válido
 
-## v4.6 Pending Features
+## v4.6 Features (implemented May 10, 2026)
 
-*(Sin pendientes conocidos)*
+- **Gmail: fallthrough a prompt completo si fast-path devuelve amount=0** — antes devolvía cargo_real con monto 0; ahora cae al prompt completo para extraer monto correctamente
+- **Gmail: prompt mejorado** — amtQ usa `150.00` como ejemplo numérico (antes `monto_numerico` literal confundía a Claude); instrucción explícita para buscar monto
+- **Gmail: FORMATOS ampliados** — agrega secciones Amazon y Stripe/Servicios con patrones de clasificación; reglas más estrictas para evitar false positives (shipping, order received, etc.)
+- **Gmail: extractAmount +6 patrones** — order total, grand total, importe, monto, subtotal, amount charged
+- **Gmail: 60 días** — window de búsqueda extendido de 45 a 60 días
+- **Gmail: reset automático historial en v4.6** — `vp_gv6` key: primer load limpia `vp_emids` para re-parsear todos los correos con la lógica mejorada
+- **Duplicados: dismiss por par** — banner interactivo con "✓ No es duplicado" (persiste en `vp_dd`) y "🗑 Eliminar el más nuevo"
+- **Chart Por Tarjeta: brace fix** — `bChart` estaba fuera de `initCharts()` por llave extra; resuelto
 
 ---
 
@@ -294,6 +301,7 @@ print(f'Built index.html ({len(result):,} bytes)')
 
 | Version | Date | Key changes |
 |---|---|---|
+| v4.6 | May 10, 2026 | Gmail: amount fallthrough, prompt mejorado, +Amazon/Stripe formats, extractAmount+6, 60 días, auto-reset historial; duplicate dismiss; chart fix |
 | v4.5 | May 9, 2026 | Dashboard first, FAB escaneo, month nav + search + summary in history, swipe-to-delete, spending velocity, budgets per category, Amex PDF fix |
 | v4.4 | May 9, 2026 | PDF beta header fix, API widget (test/tokens/billing), history editing, Gmail expanded (Stripe/1Password/Amazon refined), email pre-classification, regex amount extraction |
 | v4.3 | Apr 13, 2026 | Gmail OAuth, statement history, Meli+, Safari fix |
