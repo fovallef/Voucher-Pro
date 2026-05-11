@@ -286,6 +286,55 @@ print(f'Built index.html ({len(result):,} bytes)')
 
 ---
 
+## Team & Deploy Process (as of May 10, 2026)
+
+All changes to VoucherPro go through this mandatory 4-step gate:
+
+```
+1. Alex    — Implements the change via Python fix script (string replacement in index.html)
+2. Valentina — Runs: python validate_deploy.py
+              → EXIT 1 (errors) = BLOCKED, Alex must fix
+              → EXIT 0 with warnings = Marco reviews flagged patterns
+              → EXIT 0 clean = proceed
+3. Marco   — Reviews any Safari/iOS warnings from Valentina's report (APROBADO / RECHAZADO / CONDICIONAL)
+4. Watson  — Logic & QA review (semantic correctness, edge cases, regressions)
+5. Deploy  — git push origin main → GitHub Pages (~2 min)
+```
+
+### AI Team Members
+
+| Member | Role | Activates when |
+|---|---|---|
+| **Jarvis** | Orchestrator | Always — coordinates all tasks |
+| **Alex** | Senior Developer | Any code change in index.html |
+| **Valentina** | DevOps & QA | After every Alex implementation, before deploy |
+| **Marco** | Safari/iOS Specialist | Valentina flags Safari pattern warnings |
+| **Watson** | Senior Researcher / QA | Logic review, deep investigation, pre-deploy semantic check |
+| **Lucy** | HR | New team member recruitment |
+
+### validate_deploy.py
+
+Pre-deploy gate — runs 7 checks on index.html:
+1. Extracts `<script>` blocks
+2. Node.js syntax check (`node --check`) — skipped if Node not available
+3. Brace balance `{` / `}`
+4. Safari-forbidden pattern scan (errors block, warnings require Marco review)
+5. Backtick balance in `rReconResult`
+6. `APP_VERSION` present
+7. File size < 300KB
+
+**Safari-forbidden patterns (ERROR level — always block deploy):**
+- `const const` / `let let` / `var var` — double declaration SyntaxError
+- `([k,v])=>` destructuring inside IIFE `+(()=>{...})()` — confirmed Safari crash
+
+**Warning patterns (require Marco review before deploy):**
+- `([x,y])=>` general destructuring — safe in `return\`...\`` context, crash in IIFE context
+- Template literal inside `${}` — check for true nesting
+- `async *` generators — iOS support varies
+- `import()` dynamic — not supported in PWA context
+
+---
+
 ## Francisco's Profile (for context)
 
 - **Role:** Director General, ONESEC (ciberseguridad CDMX/LATAM)
@@ -301,6 +350,7 @@ print(f'Built index.html ({len(result):,} bytes)')
 
 | Version | Date | Key changes |
 |---|---|---|
+| v4.7 | May 10, 2026 | MSI tracking (pdfPrompt detection, reconciliation section, dashboard card, persistence); card filter History; fix: reconciled txs in PDF context; fix: double-const Safari crash; fix: ([k,v])=> IIFE Safari crash; validate_deploy.py pre-deploy gate |
 | v4.6 | May 10, 2026 | Gmail: amount fallthrough, prompt mejorado, +Amazon/Stripe formats, extractAmount+6, 60 días, auto-reset historial; duplicate dismiss; chart fix |
 | v4.5 | May 9, 2026 | Dashboard first, FAB escaneo, month nav + search + summary in history, swipe-to-delete, spending velocity, budgets per category, Amex PDF fix |
 | v4.4 | May 9, 2026 | PDF beta header fix, API widget (test/tokens/billing), history editing, Gmail expanded (Stripe/1Password/Amazon refined), email pre-classification, regex amount extraction |
