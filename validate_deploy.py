@@ -94,6 +94,9 @@ SAFARI_FORBIDDEN = [
      'Template literal dentro de ${} — posible anidado, Marco debe revisar contexto', 'warning'),
     (r'(?<!\w)async\s+\*', 'Async generator — verificar soporte iOS', 'warning'),
     (r'import\s*\(', 'Dynamic import() — no soportado en PWA context', 'warning'),
+    # FSM enforcement (Brief 1-bis Fase D): direct lifecycle writes outside FSM helpers
+    # Allowlist: transitionTx, deriveLifecycle, txStatus, migration block (escape via comment marker)
+    (r't\.lifecycle\s*=\s*[\'"]', 'Asignación directa de t.lifecycle (usar transitionTx en su lugar — FSM Fase D)', 'warning'),
 ]
 
 all_js = '\n'.join(js_blocks)
