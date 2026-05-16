@@ -149,6 +149,32 @@ if size_kb > 300:
 else:
     print(f'  {PASS} {size_kb:.0f}KB — dentro del límite seguro')
 
+# ── 8. MIGRATION BLOCKS SIN PERSIST ───────────────────────────
+print('\n[8] Migration blocks con mutacion sin persist...')
+_global_defensive = 'v5.61 global persist defensivo' in content
+_gaps = []
+for _m in re.finditer(r"if\(!localStorage\.getItem\('(vp_v\d+_\w+)'\)\)", content):
+    _flag = _m.group(1)
+    _start = _m.start()
+    _end_marker = f"localStorage.setItem('{_flag}','1');"
+    _end = content.find(_end_marker, _start)
+    if _end < 0:
+        continue
+    _block = content[_start:_end + len(_end_marker)]
+    _mutates = bool(re.search(r'\.matched_id\s*=|\.statementRef\s*=|\.status\s*=|\.lifecycle\s*=|\.msi\s*=', _block))
+    _persists = 'persist()' in _block
+    if _mutates and not _persists:
+        _gaps.append(_flag)
+if _gaps and not _global_defensive:
+    warnings.append(f'Migration blocks sin persist y sin defensa global: {", ".join(_gaps)}')
+    print(f'  {FAIL} {len(_gaps)} migration blocks sin persist — RIESGO de cambios perdidos')
+    for _g in _gaps:
+        print(f'      - {_g}')
+elif _gaps and _global_defensive:
+    print(f'  {PASS} {len(_gaps)} migration blocks sin persist propio, protegidos por persist global defensivo (v5.61)')
+else:
+    print(f'  {PASS} todos los migration blocks con persist explicito')
+
 # ── RESUMEN FINAL ──────────────────────────────────────────────
 print('\n' + '=' * 60)
 if errors:
