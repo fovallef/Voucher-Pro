@@ -2,7 +2,7 @@
 **Hunter:** Kai
 **Fecha origen:** 2026-05-18 · **Última actualización:** 2026-05-19
 **Versiones bajo prueba:** v5.85 → v5.91 (extendido durante reparación SW)
-**Status:** EN CURSO — M4 cerrado, M2 parcial, M1 y M3 pendientes
+**Status:** ✅ CERRADO 2026-05-23 — todas las misiones (M1-M5) cerradas. Baseline limpio para arrancar Brief 3.
 
 ---
 
@@ -52,7 +52,11 @@ Cuatro misiones cortas. Ordenadas por valor de información, no por probabilidad
 
 **Reportar:** suspicious linkages encontradas + paths para reparar.
 
-### M2 — Service Worker fresh (v5.86) — **PARCIAL (replanteada)**
+### M2 — Service Worker fresh (v5.86) — **✅ CERRADA 2026-05-23**
+
+**Resultado:** validado por uso real. Francisco recibió y aplicó los banners de actualización en sus iPhone PWA durante la sesión del 2026-05-23 — secuencia v5.91 → v5.92 → v5.93. El mecanismo fetch-based (post v5.90) sustituye eficazmente al Service Worker que no funcionaba en iOS Safari PWA standalone.
+
+
 
 **Hallazgo 2026-05-19:** SW NO funciona en iOS Safari PWA standalone (limitación conocida del platform). Tras v5.86-v5.88 con barra de update no apareciendo, se replanteó la estrategia:
 - v5.90 eliminó el SW y reemplazó por fetch directo de `index.html?_t=<ts>` cada 3 min + on visibilitychange
@@ -181,7 +185,7 @@ Validado por Francisco visualmente. No requiere fix adicional.
 | Misión | Status | Próximo paso |
 |---|---|---|
 | M1 invariantes | ✅ Cerrada | — (audit pass 2026-05-23, badge verde 0 invariantes) |
-| M2 SW → fetch | 🟡 Parcial | Francisco confirma visualmente banner v5.91/v5.92 en iPhone PWA |
+| M2 SW → fetch | ✅ Cerrada | — (validado por uso real: banners v5.91→v5.92→v5.93 recibidos 2026-05-23) |
 | M3 .am 13px + MXN oculto | ✅ Cerrada | — (fix en v5.93: 14px→13px, MXN implícito) |
 | M4 Mercado Libre | ✅ Cerrada | — (fix en v5.87) |
 | M5 isDupe merchant | ✅ Cerrada | — (fix en v5.92) |
