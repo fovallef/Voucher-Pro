@@ -1,8 +1,8 @@
 # Bug Hunt #004 — Post Brief 2, pre Brief 3
 **Hunter:** Kai
-**Fecha:** 2026-05-18
-**Versiones bajo prueba:** v5.85 + v5.86 (post UX polish + K-7 Service Worker)
-**Status:** ARRANCANDO
+**Fecha origen:** 2026-05-18 · **Última actualización:** 2026-05-19
+**Versiones bajo prueba:** v5.85 → v5.91 (extendido durante reparación SW)
+**Status:** EN CURSO — M4 cerrado, M2 parcial, M1 y M3 pendientes
 
 ---
 
@@ -36,9 +36,14 @@ Cuatro misiones cortas. Ordenadas por valor de información, no por probabilidad
 
 **Reportar:** suspicious linkages encontradas + paths para reparar.
 
-### M2 — Service Worker fresh (v5.86)
+### M2 — Service Worker fresh (v5.86) — **PARCIAL (replanteada)**
 
-Recién deployado. Riesgos típicos de SW:
+**Hallazgo 2026-05-19:** SW NO funciona en iOS Safari PWA standalone (limitación conocida del platform). Tras v5.86-v5.88 con barra de update no apareciendo, se replanteó la estrategia:
+- v5.90 eliminó el SW y reemplazó por fetch directo de `index.html?_t=<ts>` cada 3 min + on visibilitychange
+- v5.91 deployado como dummy version-bump para verificar el banner azul
+- **Pendiente:** Francisco confirma visualmente si la barra "✨ Nueva versión (v5.91) disponible" aparece en su iPhone PWA
+
+Riesgos típicos de SW originalmente identificados:
 - **Cache stuck**: usuario actualiza pero ve versión vieja por días (lo que se quería resolver, paradójicamente puede empeorar si SW se queda con caché stale)
 - **Race condition**: SW instala v2 mientras app v1 está activa → estado mixto
 - **Offline broken**: si SW falla, ¿la app sigue funcionando o ladrillo?
@@ -66,17 +71,38 @@ Francisco dijo en v5.84 que "el texto del monto sigue demasiado grande". v5.85 l
 
 **Reportar:** issue específicos por pantalla (Historial, Conciliar) o aprobar.
 
-### M4 — Bug latente: Mercado Libre $189 no visible
+### M5 — isDupe rechaza match contra recurrente con merchant variante — **✅ CERRADA 2026-05-23**
 
-Pendiente desde v5.78. El tx existe en `S.txs` (confirmado por audit dump) pero no aparece en search "Mercad" en abril 2026.
+**Reporte de Francisco:** Gmail import de Amazon Prime $99 (mensual). El recurrente ya existía y processRecurring ya había creado la instancia del mes. El Gmail import NO detectó el duplicado y creó un cargo adicional. Resultado visible: dos cargos casi idénticos en el historial (21-may y 22-may, ambos $99 AmEx).
 
-**Acción:** debug filter de Historial:
-- `S.txs.filter(t=>t.merchant.includes("MERCADO"))` desde consola del log viewer
-- ¿El tx tiene flag que lo excluye? `_legacyReconciled`, `_autoCreatedFromMSI`, `lifecycle`, etc.
-- ¿La fecha es de un mes que Francisco no está viendo?
-- ¿El search es case-sensitive accidentalmente?
+**Causa raíz:** `isDupe(c, txs)` en index.html requería match **exacto** de merchant (lowercase). El recurrente tenía merchant = `"Amazon Prime"` (o similar) mientras que el Gmail parser trajo `"la membresía Amazon Prime"` (extraído por Claude del subject/body del email). Lowercase: `'amazon prime' !== 'la membresía amazon prime'` → no matchea → no detecta duplicado.
 
-**Reportar:** causa raíz + fix recomendado.
+**Fix aplicado (v5.92):** substring bidireccional. Si uno está contenido en el otro (y ambos >2 chars), considerar match. Los otros filtros (amount ±$0.01, mismo currency, misma card, ventana 3 días, mismo signo) siguen previniendo falsos positivos.
+
+```javascript
+// Antes:
+if((ex.merchant||'').toLowerCase()!==cm)return false;
+
+// Después:
+const em=(ex.merchant||'').toLowerCase();
+if(em!==cm && em.length>2 && cm.length>2 && !em.includes(cm) && !cm.includes(em)) return false;
+```
+
+**Cleanup pendiente del usuario:** el cargo duplicado del 22-may (el creado erróneamente por Gmail import) sigue existiendo en localStorage. El fix NO lo borra automáticamente (no tocamos datos del usuario, solo el código futuro). Francisco tiene que borrarlo manualmente en la app (swipe-delete o desde la edición).
+
+**Verificación recomendada:** próximo mes, al recibir email Amazon Prime + correr Gmail import, debe marcar dup-skip en lugar de crear cargo.
+
+### M4 — Bug latente: Mercado Libre $189 no visible — **✅ CERRADA 2026-05-18**
+
+**Causa raíz:** Búsqueda de Historial limitada a `byMonth` (transacciones del mes activo). El tx Mercado Libre $189 existía en `S.txs` pero su fecha caía fuera del mes que Francisco veía cuando buscaba "Mercad".
+
+**Fix aplicado (v5.87):** El search expande el pool de búsqueda a todas las transacciones de la entidad activa cuando hay query — no solo el mes actual.
+
+```javascript
+const _searchPool = srch ? S.txs.filter(t=>t.entity===S.entity) : byMonth;
+```
+
+Validado por Francisco visualmente. No requiere fix adicional.
 
 ---
 
@@ -109,4 +135,18 @@ Pendiente desde v5.78. El tx existe en `S.txs` (confirmado por audit dump) pero 
 
 ---
 
-*Kai — Bug Hunter · Charter #004, 2026-05-18*
+*Kai — Bug Hunter · Charter #004, 2026-05-18 · Última edición 2026-05-19*
+
+---
+
+## Resumen ejecutivo del estado (2026-05-19)
+
+| Misión | Status | Próximo paso |
+|---|---|---|
+| M1 invariantes | 🔴 Abierta | Correr auditInvariants() sobre las 7 migrations sin persist |
+| M2 SW → fetch | 🟡 Parcial | Francisco confirma visualmente banner v5.91/v5.92 en iPhone PWA |
+| M3 .am 14px | 🔴 Abierta | Validar visualmente si la reducción es suficiente |
+| M4 Mercado Libre | ✅ Cerrada | — (fix en v5.87) |
+| M5 isDupe merchant | ✅ Cerrada | — (fix en v5.92) |
+
+**Recomendación Kai:** cerrar M2 (confirmar banner) antes de abrir M1, porque M1 requiere baseline limpio sin updates en curso.
