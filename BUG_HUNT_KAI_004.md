@@ -75,7 +75,28 @@ Riesgos típicos de SW originalmente identificados:
 
 **Reportar:** comportamiento SW vs. esperado.
 
-### M3 — UX iOS bug aún visible (.am 17px→14px en v5.85)
+### M3 — UX iOS visual (.am tamaño + currency overlap) — **✅ CERRADA 2026-05-23**
+
+**Reporte Francisco:** "Se siguen viendo grandes y el texto de moneda 'MXN' se ve mal — se empalma con el bote de basura y el contraste es muy malo (gris con fondo rojo)".
+
+**Diagnóstico Sofía+Kai:**
+1. `.am` font-size 14px todavía percibido como grande.
+2. `.cu` (currency MXN, color `var(--tx3)` gris) renderizado SIEMPRE debajo del monto. Al hacer swipe, el botón rojo `.sw-del` (gradient `#dc2626`→`#ef4444`) queda detrás de la fila trasladada, y el "MXN" gris queda visible sobre rojo = contraste pésimo.
+
+**Fix aplicado (v5.93):**
+- `.am` 14px → 13px (reducción adicional ~7%)
+- Render condicional: ocultar `.cu` cuando `t.currency === 'MXN'` (implícito en app diseñada para México). Para foreign currencies (USD, EUR, etc.) sigue visible — necesario para distinguir.
+
+```javascript
+// Antes:
+'<div class="cu">'+t.currency+'</div>'
+// Después:
+(t.currency!=='MXN'?'<div class="cu">'+t.currency+'</div>':'')
+```
+
+**Beneficio combinado:** percepción de fila más compacta + cero conflicto visual con el botón rojo de swipe-delete para el caso default mexicano.
+
+### M3 OLD — UX iOS bug aún visible (.am 17px→14px en v5.85) [archivo histórico]
 
 Francisco dijo en v5.84 que "el texto del monto sigue demasiado grande". v5.85 lo bajó a 14px. **¿Es suficiente?**
 
@@ -161,7 +182,7 @@ Validado por Francisco visualmente. No requiere fix adicional.
 |---|---|---|
 | M1 invariantes | ✅ Cerrada | — (audit pass 2026-05-23, badge verde 0 invariantes) |
 | M2 SW → fetch | 🟡 Parcial | Francisco confirma visualmente banner v5.91/v5.92 en iPhone PWA |
-| M3 .am 14px | 🔴 Abierta | Validar visualmente si la reducción es suficiente |
+| M3 .am 13px + MXN oculto | ✅ Cerrada | — (fix en v5.93: 14px→13px, MXN implícito) |
 | M4 Mercado Libre | ✅ Cerrada | — (fix en v5.87) |
 | M5 isDupe merchant | ✅ Cerrada | — (fix en v5.92) |
 
