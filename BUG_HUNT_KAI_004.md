@@ -16,7 +16,23 @@ Brief 2 cerró con 24 deploys en 2 días (v5.56-v5.84). Brief 3 arranca esta sem
 
 Cuatro misiones cortas. Ordenadas por valor de información, no por probabilidad.
 
-### M1 — Migrations sin persist (verificar daño residual)
+### M1 — Migrations sin persist (verificar daño residual) — **✅ CERRADA 2026-05-23**
+
+**Resultado:** audit pass limpio. Badge de invariantes en Dashboard mostró **verde con 0 issues**. El persist defensivo introducido en v5.61 (`try{persist();}catch(_pe){...}` en el flujo de carga global) capturó todas las mutaciones de las migrations sin persist y las guardó eventualmente.
+
+**Análisis estático adicional (Kai 2026-05-23):**
+
+| Migration | _save fallback | Riesgo residual sin persist defensivo |
+|---|---|---|
+| vp_v541_repair | ✅ | Bajo (tenía red propia) |
+| vp_v547_stmt_dedup | ❌ | Habría sido alto si persist defensivo no existiera |
+| vp_v550_stx_side_repair | ✅ | Bajo |
+| vp_v552_stx_side_lax | ✅ | Bajo |
+| vp_v554_diag_normalize | ❌ | Habría sido alto |
+| vp_v555_unignore | ✅ | Bajo |
+| vp_v559_unlink_suspects | ✅ | Bajo |
+
+**Lección aprendida:** el persist defensivo en el flujo de load es la red de seguridad estructural que cubrió la negligencia individual de las migrations. Patrón a preservar en migrations futuras.
 
 `validate_deploy.py` reportó **7 migrations con potencial daño**:
 - vp_v541_repair
@@ -143,7 +159,7 @@ Validado por Francisco visualmente. No requiere fix adicional.
 
 | Misión | Status | Próximo paso |
 |---|---|---|
-| M1 invariantes | 🔴 Abierta | Correr auditInvariants() sobre las 7 migrations sin persist |
+| M1 invariantes | ✅ Cerrada | — (audit pass 2026-05-23, badge verde 0 invariantes) |
 | M2 SW → fetch | 🟡 Parcial | Francisco confirma visualmente banner v5.91/v5.92 en iPhone PWA |
 | M3 .am 14px | 🔴 Abierta | Validar visualmente si la reducción es suficiente |
 | M4 Mercado Libre | ✅ Cerrada | — (fix en v5.87) |
