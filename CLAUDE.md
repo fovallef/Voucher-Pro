@@ -350,6 +350,7 @@ Pre-deploy gate — runs 7 checks on index.html:
 
 | Version | Date | Key changes |
 |---|---|---|
+| v4.8 | May 11, 2026 | Fix: eliminate ALL arrow destructuring params (([,l])=>, ([k,v])=>, ([v,l])=>); no-cache meta tags for PWA; Sofía onboarded as Lead UX/UI Designer |
 | v4.7 | May 10, 2026 | MSI tracking (pdfPrompt detection, reconciliation section, dashboard card, persistence); card filter History; fix: reconciled txs in PDF context; fix: double-const Safari crash; fix: ([k,v])=> IIFE Safari crash; validate_deploy.py pre-deploy gate |
 | v4.6 | May 10, 2026 | Gmail: amount fallthrough, prompt mejorado, +Amazon/Stripe formats, extractAmount+6, 60 días, auto-reset historial; duplicate dismiss; chart fix |
 | v4.5 | May 9, 2026 | Dashboard first, FAB escaneo, month nav + search + summary in history, swipe-to-delete, spending velocity, budgets per category, Amex PDF fix |
